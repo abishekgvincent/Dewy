@@ -1,20 +1,50 @@
 # Dewy – AI-Native CRM for Beauty Brands
 
-Dewy is a production-quality MVP of an AI-native CRM built specifically for beauty and skincare brands. Instead of manually creating database filters, marketers describe a business goal in natural language (e.g., *"Win back customers who haven't purchased in 90 days"* or *"Sunscreen buyers who have never purchased a moisturizer"*).
+Dewy is a production-quality, AI-native CRM platform built specifically for beauty, cosmetics, and skincare brands. Instead of manually writing database filters or SQL queries, marketers write business goals in natural language (e.g., *"Win back customers who haven't purchased in 90 days"* or *"Target sunscreen buyers who have never purchased a moisturizer"*).
 
-Dewy automatically:
-1. **Identifies the target customer audience** using Gemini NLP segmentation.
-2. **Translates filters to SQLAlchemy queries** to calculate audience size, matching spend, and matches.
-3. **Recommends the best communication channel** (WhatsApp, SMS, Email, RCS) with strategic reasoning.
-4. **Generates personalized message copy variants** (A, B, C) tailored to the audience and channel.
-5. **Launches campaigns** and triggers a separate **Channel Simulator Service** which processes messages.
-6. **Simulates asynchronous funnel callbacks** (Sent → Delivered/Failed → Opened → Clicked → Purchased) with randomized delays.
-7. **Performs real-time campaign updates** in the CRM database, including simulated product orders on purchase events.
-8. **Generates campaign performance insights** and next-best marketing recommendations.
+Dewy processes these requests end-to-end:
+1. **AI Segmentation**: Uses Gemini NLP to parse the goal into structured database filters.
+2. **Deterministic SQL Conversion**: Translates parsed filters into database-level queries using SQLAlchemy to calculate audience size, purchase histories, and segment metrics.
+3. **Smart Channel Recommendation**: Recommends the optimal communication channel (WhatsApp, Email, SMS) along with logical reasoning.
+4. **Personalized Copywriting**: Generates copy variants tailored specifically to the target audience segment, selected channel, and campaign objective.
+5. **Funnel Simulation**: Integrates with a simulated message dispatch broker to asynchronously run delivery, click, open, and order conversions.
+6. **Insight Analytics**: Evaluates post-campaign analytics using AI to deliver insights and recommend next-best actions.
 
 ---
 
-## Technical Architecture
+## 🛠️ Technology Stack
+
+### Frontend
+- **Framework**: Next.js 16.2.x (React 19, App Router)
+- **Styling**: Tailwind CSS v4, Vanilla CSS
+- **Icons**: Lucide React
+- **Data Fetching & State**: TanStack React Query v5, Axios
+- **Visualization**: Recharts (v3) for interactive campaign dashboard charts
+- **UI System**: Shadcn/ui & Radix UI primitives
+- **Notifications**: React Hot Toast
+
+### Backend
+- **Framework**: FastAPI (Python 3.11+)
+- **ORM**: SQLAlchemy 2.x
+- **Database**: SQLite (Local Dev / Docker Volume) or PostgreSQL (Production-ready)
+- **AI Engine**: Google Gemini API via `google-generativeai` SDK (Gemini 1.5/2.5 models)
+- **Environment**: Python-dotenv, Pydantic v2 schemas
+- **Server**: Uvicorn
+
+### Channel Simulator Service
+- **Framework**: FastAPI (Python 3.11+)
+- **ORM**: SQLAlchemy 2.x
+- **Database**: SQLite (independent data persistence store)
+- **Task Dispatcher**: Asyncio background task loops simulating delay-based consumer funnels
+
+### Orchestration & Deployment
+- **Containerization**: Docker
+- **Orchestration**: Docker Compose
+- **Configuration Templates**: Root, backend, and channel-service `.env.example` configurations
+
+---
+
+## 📐 Technical Architecture
 
 ```
                  +-----------------------------+
@@ -22,114 +52,137 @@ Dewy automatically:
                  |     (Dashboard, Copilot)    |
                  +--------------+--------------+
                                 |
-                                v
+                                v (Rest API / localhost:8000)
                  +-----------------------------+
                  |    FastAPI CRM Backend      | <---->  Google Gemini API
                  |        (Port 8000)          |
                  +-------+--------------+------+
                          |              ^
-                         |              | Callback
-                         v              | (/receipt)
+                         |              | Callback Webhook
+                         v              | (/api/receipts)
 +------------+   +-------v--------------+------+
-| PostgreSQL |   |  Channel Simulator Service  |
-|  Database  |   |        (Port 8001)          |
+| SQLite /   |   |  Channel Simulator Service  |
+| PostgreSQL |   |        (Port 8001)          |
 +------------+   +-----------------------------+
 ```
 
 ---
 
-## Directory Structure
+## 📂 Directory Structure
 
-* `/frontend`: Next.js 16 app using React Query, Tailwind CSS, Recharts, and shadcn/ui.
-* `/backend`: FastAPI service using SQLAlchemy, Alembic, Pydantic, and PostgreSQL.
-* `/channel-service`: Separate FastAPI service simulating communications delivery.
-* `/docs`: Project documentation.
-
----
-
-## Getting Started
-
-### Prerequisites
-
-* Python 3.10+
-* Node.js 18+
-* PostgreSQL database (or fallback to local SQLite)
-* Gemini API Key
-
-### Backend Setup
-
-1. Navigate to `/backend`:
-   ```bash
-   cd backend
-   ```
-2. Create virtual environment and install dependencies:
-   ```bash
-   python -m venv venv
-   .\venv\Scripts\activate
-   pip install -r requirements.txt
-   ```
-3. Set environment variables in `.env`:
-   ```env
-   DATABASE_URL=sqlite:///./dewy.db  # Or your PostgreSQL URI
-   GEMINI_API_KEY=your_gemini_key
-   CHANNEL_SERVICE_URL=http://localhost:8001
-   ```
-4. Run DB Seeding (generates 1,000 customers, 100 products, 5,000+ orders, and personas like VIP, Dormant, SunCare, AcneCare):
-   ```bash
-   python -m app.db.seed
-   ```
-5. Start the CRM Backend:
-   ```bash
-   python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
-   ```
-
-### Channel Simulator Setup
-
-1. Navigate to `/channel-service`:
-   ```bash
-   cd channel-service
-   ```
-2. Start the Simulator:
-   ```bash
-   # Re-uses backend venv
-   ..\backend\venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8001
-   ```
-
-### Frontend Setup
-
-1. Navigate to `/frontend`:
-   ```bash
-   cd frontend
-   ```
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-3. Start the dev server:
-   ```bash
-   npm run dev
-   ```
-4. Open [http://localhost:3000](http://localhost:3000) to view the SaaS dashboard!
+```
+├── backend/                   # FastAPI CRM Backend
+│   ├── app/
+│   │   ├── db/                # Database configuration and seeding scripts
+│   │   ├── models/            # SQLAlchemy database tables/models
+│   │   ├── routes/            # Route controllers (AI, campaigns, datasets, etc.)
+│   │   ├── schemas/           # Pydantic schemas for request/response validation
+│   │   ├── services/          # Core services (AI generation, CRM queries, etc.)
+│   │   └── main.py            # Backend service entrypoint
+│   └── requirements.txt
+│
+├── channel-service/           # Simulated Message Delivery Service
+│   ├── app/
+│   │   ├── routes/            # Routes (Simulated message dispatch, webhook callbacks)
+│   │   ├── simulator.py       # Asyncio scheduling loops simulating client action callbacks
+│   │   └── main.py            # Channel Simulator entrypoint
+│   └── requirements.txt
+│
+├── frontend/                  # Next.js 16 Web Dashboard & Copilot
+│   ├── app/                   # Next.js App Router (Dashboard, Copilot UI)
+│   ├── components/            # Shared UI components (Charts, Sidebar, AI copilot views)
+│   ├── lib/                   # API clients and campaign projection math utils
+│   └── package.json
+│
+└── DEPLOY.md                  # Detailed deployment runbook
+```
 
 ---
 
-## REST API Documentation
+## 🚀 Getting Started
 
-### CRM Backend (Port 8000)
-* `GET /health`: Health status.
-* `GET /customers`: Filter and search customers.
-* `GET /products`: List products.
-* `GET /orders`: List order logs.
-* `GET /campaigns`: List campaign history.
-* `GET /campaigns/{id}`: View campaign detail, funnel counts, logs, and AI insights.
-* `POST /campaigns`: Create campaign draft/segment.
-* `POST /campaigns/send`: Dispatch campaign.
-* `POST /receipt`: Simulator callback updating states.
-* `GET /stats`: Aggregated dashboard metrics.
-* `POST /ai/segment`: Natural language parsing.
-* `POST /ai/message`: Generate campaign message copy variants.
-* `POST /ai/recommend-channel`: Retrieve channel recommendations.
-* `POST /ai/insights`: Generate AI post-campaign evaluations.
+### Method A: Docker Compose (Recommended)
 
-### Channel Simulator (Port 8001)
-* `POST /send`: Accept messages and simulate funnel callbacks.
+1. **Clone the repository and set environment variables**:
+   ```bash
+   cp .env.example .env
+   ```
+2. **Add your Google Gemini API Key** in `.env`:
+   ```ini
+   GEMINI_API_KEY=your_gemini_api_key_here
+   ```
+3. **Launch the stack**:
+   ```bash
+   docker-compose up --build -d
+   ```
+4. Access the apps:
+   - **Frontend Dashboard**: [http://localhost:3000](http://localhost:3000)
+   - **Backend API Docs**: [http://localhost:8000/docs](http://localhost:8000/docs)
+   - **Channel Simulator Docs**: [http://localhost:8001/docs](http://localhost:8001/docs)
+
+---
+
+### Method B: Manual Local Setup
+
+#### 1. Setup Backend
+```bash
+cd backend
+python -m venv .venv
+# Windows:
+.venv\Scripts\activate
+# Unix/macOS:
+source .venv/bin/activate
+
+pip install -r requirements.txt
+cp .env.example .env # Set your GEMINI_API_KEY
+python -m app.db.seed # Seed initial 1,000 customers, products, and order histories
+python -m uvicorn app.main:app --reload --port 8000
+```
+
+#### 2. Setup Channel Simulator
+```bash
+cd channel-service
+python -m venv .venv
+# Windows:
+.venv\Scripts\activate
+# Unix/macOS:
+source .venv/bin/activate
+
+pip install -r requirements.txt
+cp .env.example .env
+python -m uvicorn app.main:app --reload --port 8001
+```
+
+#### 3. Setup Frontend
+```bash
+cd frontend
+npm install
+npm run dev
+```
+Open [http://localhost:3000](http://localhost:3000) to see the web console.
+
+---
+
+## 🔌 Core API Documentation
+
+### CRM Backend (`:8000`)
+- **Customers**: `GET /customers` — Search, query, and paginate customers.
+- **Products**: `GET /products` — Retrieve beauty/skincare product catalogs.
+- **Campaigns**:
+  - `GET /campaigns` — Fetch lists of campaigns.
+  - `POST /campaigns` — Create custom target audiences and campaign drafts.
+  - `POST /campaigns/send` — Dispatches message dispatch list to simulator.
+- **Datasets**:
+  - `GET /datasets` — List dataset files and sizes.
+  - `POST /datasets/upload` — Upload CSV customer and transaction histories.
+- **AI Copilot**:
+  - `POST /ai/intelligence` — Generate database-wide intelligence summaries.
+  - `POST /ai/opportunities` — Retrieve Gemini-generated marketing opportunities.
+  - `POST /ai/segments` — Generate query-matching segment criteria.
+  - `POST /ai/channels` — Retrieve predicted channel channel scores.
+  - `POST /ai/messages` — Build copywriting variations.
+
+### Channel Simulator (`:8001`)
+- **Simulate Dispatch**: `POST /send` — Accepts delivery target payload. Simulates user behavior ticks over time.
+- **Health**: `GET /health` — Verifies simulator is responsive.
+- **Test Sandbox**: `POST /test-send` — Sandbox endpoint for validating communication payloads.
