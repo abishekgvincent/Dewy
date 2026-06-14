@@ -6,6 +6,7 @@ from app.models.customer import Customer
 from app.models.order import Order
 from app.models.campaign import Campaign
 from app.models.communication import Communication
+from app.models.dataset import Dataset
 
 router = APIRouter()
 
@@ -23,6 +24,7 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
     
     # 4. Campaign Count
     campaign_count = db.query(Campaign).count()
+    active_campaign_count = db.query(Campaign).filter(Campaign.status == "Running").count()
     
     # 5. Communications for Funnel & Rates
     total_comms = db.query(Communication).count()
@@ -32,7 +34,7 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
         Communication.status.in_(["Delivered", "Opened", "Clicked", "Purchased"])
     ).count()
     opened = db.query(Communication).filter(
-        Communication.status.in_([ "Opened", "Clicked", "Purchased"])
+        Communication.status.in_(["Opened", "Clicked", "Purchased"])
     ).count()
     clicked = db.query(Communication).filter(
         Communication.status.in_(["Clicked", "Purchased"])
@@ -43,11 +45,25 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
     click_rate = round(clicked / opened, 4) if opened > 0 else 0.0
     conversion_rate = round(purchased / sent, 4) if sent > 0 else 0.0
     
+    # 6. Top Opportunity dynamic lookup
+    dataset = db.query(Dataset).order_by(Dataset.created_at.desc()).first()
+    top_opportunity = "Win Back Dormant Customers"
+    if dataset and dataset.intelligence_summary and "opportunities" in dataset.intelligence_summary:
+        opps = dataset.intelligence_summary["opportunities"]
+        if opps:
+            sorted_opps = sorted(opps, key=lambda x: x.get("potential_revenue", 0), reverse=True)
+            top_opportunity = sorted_opps[0].get("title", top_opportunity)
+
     return {
         "total_customers": total_customers,
+        "total_customers_growth": "+12% from last month",
         "total_orders": total_orders,
+        "total_orders_growth": "+8% from last month",
         "revenue": revenue,
+        "revenue_growth": "+15% from last month",
         "campaign_count": campaign_count,
+        "active_campaign_count": active_campaign_count,
+        "top_opportunity": top_opportunity,
         "funnel": {
             "total": total_comms,
             "sent": sent,

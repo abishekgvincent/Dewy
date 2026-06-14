@@ -1,3 +1,4 @@
+import uuid
 import random
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException
@@ -6,6 +7,7 @@ from sqlalchemy.orm import Session
 from app.db.database import get_db
 from app.models.communication import Communication
 from app.models.communication_event import CommunicationEvent
+from app.models.callback_log import CallbackLog
 from app.models.customer import Customer
 from app.models.order import Order
 from app.models.orderitem import OrderItem
@@ -14,14 +16,43 @@ from app.models.product import Product
 router = APIRouter()
 
 class ReceiptPayload(BaseModel):
-    communication_id: int
-    event: str  # SENT, DELIVERED, FAILED, OPENED, CLICKED, PURCHASED
+    event_id: str | None = None
+    communication_id: str
+    event: str  # SENT, DELIVERED, FAILED, OPENED, READ, CLICKED, PURCHASED
+    timestamp: datetime | None = None
     metadata: dict | None = None
+
+
+def parse_communication_id(raw_id: str) -> int:
+    normalized = raw_id.strip()
+    if normalized.isdigit():
+        return int(normalized)
+    if normalized.startswith("comm_") and normalized[5:].isdigit():
+        return int(normalized[5:])
+    raise HTTPException(status_code=400, detail="Invalid communication_id")
+
 
 @router.post("/")
 def receive_receipt(payload: ReceiptPayload, db: Session = Depends(get_db)):
+    communication_id = parse_communication_id(payload.communication_id)
+
+    # Create callback log record
+    comm_uuid = uuid.uuid5(uuid.NAMESPACE_DNS, f"communication:{communication_id}")
+    cb_log = CallbackLog(
+        communication_id=comm_uuid,
+        payload={
+            "event_id": payload.event_id,
+            "communication_id": payload.communication_id,
+            "event": payload.event,
+            "timestamp": payload.timestamp.isoformat() if payload.timestamp else None,
+            "metadata": payload.metadata
+        },
+        received_at=datetime.utcnow()
+    )
+    db.add(cb_log)
+
     # 1. Fetch communication
-    comm = db.query(Communication).filter(Communication.id == payload.communication_id).first()
+    comm = db.query(Communication).filter(Communication.id == communication_id).first()
     if not comm:
         raise HTTPException(status_code=404, detail="Communication not found")
         
@@ -32,6 +63,7 @@ def receive_receipt(payload: ReceiptPayload, db: Session = Depends(get_db)):
         "DELIVERED": "Delivered",
         "FAILED": "Failed",
         "OPENED": "Opened",
+        "READ": "Opened",
         "CLICKED": "Clicked",
         "PURCHASED": "Purchased"
     }
@@ -42,7 +74,7 @@ def receive_receipt(payload: ReceiptPayload, db: Session = Depends(get_db)):
     event = CommunicationEvent(
         communication_id=comm.id,
         event_type=payload.event.upper(),
-        event_timestamp=datetime.utcnow(),
+        event_timestamp=payload.timestamp or datetime.utcnow(),
         metadata_json=payload.metadata
     )
     db.add(event)

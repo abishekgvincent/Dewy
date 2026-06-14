@@ -10,6 +10,14 @@ const apiClient = axios.create({
   },
 });
 
+export interface RevenueExplanationData {
+  audience_size: number;
+  expected_engagement_rate?: number;
+  expected_conversion_rate?: number;
+  average_order_value: number;
+  projected_revenue: number;
+}
+
 export interface Customer {
   id: number;
   name: string;
@@ -68,7 +76,7 @@ export interface Campaign {
   };
 }
 
-export interface CampaignDetail extends Campaign {
+export interface CampaignDetail extends Omit<Campaign, "stats"> {
   segment: {
     id: number | null;
     name: string;
@@ -107,9 +115,14 @@ export interface Segment {
 
 export interface Stats {
   total_customers: number;
+  total_customers_growth: string;
   total_orders: number;
+  total_orders_growth: string;
   revenue: number;
+  revenue_growth: string;
   campaign_count: number;
+  active_campaign_count: number;
+  top_opportunity: string;
   funnel: {
     total: number;
     sent: number;
@@ -183,45 +196,122 @@ export const sendCampaign = async (campaignId: number): Promise<{ status: string
   return data;
 };
 
-// AI Copilot API
-export interface AISegmentResponse {
-  segment_name: string;
-  filters: Record<string, any>;
-  audience_size: number;
-  average_spend: number;
-  customers: Customer[];
+// Dataset interfaces
+export interface DatasetInfo {
+  id: number;
+  name: string;
+  status: string;
+  row_counts: {
+    customers: number;
+    products: number;
+    orders: number;
+    order_items?: number;
+  };
+  schema_info: Record<string, any>;
+  intelligence_summary: Record<string, any>;
+  created_at: string;
 }
 
-export const aiSegment = async (prompt: string): Promise<AISegmentResponse> => {
-  const { data } = await apiClient.post<AISegmentResponse>("/ai/segment", { prompt });
-  return data;
-};
-
-export interface AIMessageResponse {
-  variant_a: string;
-  variant_b: string;
-  variant_c: string;
-}
-
-export const aiMessage = async (segmentName: string, channel: string): Promise<AIMessageResponse> => {
-  const { data } = await apiClient.post<AIMessageResponse>("/ai/message", {
-    segment_name: segmentName,
-    channel,
+// Dataset APIs
+export const uploadDataset = async (formData: FormData): Promise<{ message: string; dataset: DatasetInfo }> => {
+  const { data } = await apiClient.post<{ message: string; dataset: DatasetInfo }>("/datasets/upload", formData, {
+    headers: { "Content-Type": "multipart/form-data" }
   });
   return data;
 };
 
-export interface AIRecommendChannelResponse {
-  recommended_channel: string;
-  reasoning: string;
+export const getDatasets = async (): Promise<DatasetInfo[]> => {
+  const { data } = await apiClient.get<DatasetInfo[]>("/datasets/");
+  return data;
+};
+
+export const getDatasetDetail = async (id: number): Promise<DatasetInfo> => {
+  const { data } = await apiClient.get<DatasetInfo>(`/datasets/${id}`);
+  return data;
+};
+
+// Refactored AI Copilot APIs
+export interface AIRecommendationSegment {
+  name: string;
+  confidence: number;
+  reason: string;
+  filters: Record<string, any>;
+  audience_size: number;
+  average_spend: number;
+  audience_share: number;
+  rank: number;
+  reasoning_steps: string[];
 }
 
-export const aiRecommendChannel = async (payload: {
+export interface AIRecommendationChannel {
+  channel: string;
+  score: number;
+  confidence: number;
+  reason: string;
+  reasoning_steps: string[];
+}
+
+export interface AIMessageVariant {
+  variant: string;
+  message: string;
+  predicted_ctr: number;
+  confidence: number;
+  reasoning: string;
+  reasoning_steps: string[];
+}
+
+export const getDatasetIntelligence = async (): Promise<Record<string, any>> => {
+  const { data } = await apiClient.post<Record<string, any>>("/ai/intelligence");
+  return data;
+};
+
+export const getMarketingOpportunities = async (): Promise<Record<string, any>[]> => {
+  const { data } = await apiClient.post<Record<string, any>[]>("/ai/opportunities");
+  return data;
+};
+
+export const aiRecommendSegments = async (prompt: string): Promise<AIRecommendationSegment[]> => {
+  const { data } = await apiClient.post<AIRecommendationSegment[]>("/ai/segments", { prompt });
+  return data;
+};
+
+export const aiRecommendChannels = async (payload: {
   segment_name: string;
-  description?: string;
   filters: Record<string, any>;
-}): Promise<AIRecommendChannelResponse> => {
-  const { data } = await apiClient.post<AIRecommendChannelResponse>("/ai/recommend-channel", payload);
+}): Promise<AIRecommendationChannel[]> => {
+  const { data } = await apiClient.post<AIRecommendationChannel[]>("/ai/channels", payload);
+  return data;
+};
+
+export const aiMessageVariants = async (payload: {
+  segment_name: string;
+  channel: string;
+}): Promise<AIMessageVariant[]> => {
+  const { data } = await apiClient.post<AIMessageVariant[]>("/ai/messages", payload);
+  return data;
+};
+
+export interface CampaignAnalytics {
+  id: number;
+  name: string;
+  status: string;
+  stats: {
+    sent: number;
+    delivered: number;
+    opened: number;
+    clicked: number;
+    purchased: number;
+    revenue: number;
+  };
+  rates: {
+    open_rate: number;
+    click_rate: number;
+    conversion_rate: number;
+  };
+}
+
+export const getCampaignAnalytics = async (id: number): Promise<CampaignAnalytics> => {
+  const { data } = await apiClient.get<CampaignAnalytics>(`/campaigns/${id}/analytics`);
   return data;
 };
 

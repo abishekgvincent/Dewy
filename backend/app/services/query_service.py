@@ -92,6 +92,31 @@ def build_customer_query(db: Session, filters: dict):
         except (ValueError, TypeError):
             pass
 
+    # 9. min_orders
+    if "min_orders" in filters and filters["min_orders"] is not None:
+        try:
+            min_ord = int(filters["min_orders"])
+            subq = db.query(Order.customer_id).group_by(Order.customer_id).having(func.count(Order.id) >= min_ord).subquery()
+            query = query.filter(Customer.id.in_(subq))
+        except (ValueError, TypeError):
+            pass
+
+    # 10. refill_soon
+    if "refill_soon" in filters and filters["refill_soon"]:
+        cutoff_start = datetime.utcnow() - timedelta(days=40)
+        cutoff_end = datetime.utcnow() - timedelta(days=25)
+        subq = db.query(Order.customer_id).join(OrderItem).join(Product).filter(
+            Product.refill_cycle_days.isnot(None),
+            Order.order_date >= cutoff_start,
+            Order.order_date <= cutoff_end
+        ).subquery()
+        query = query.filter(Customer.id.in_(subq))
+
+    # 11. new_signup
+    if "new_signup" in filters and filters["new_signup"]:
+        cutoff = datetime.utcnow() - timedelta(days=30)
+        query = query.filter(Customer.signup_date >= cutoff)
+
     return query
 
 def get_segment_stats(db: Session, filters: dict) -> tuple[int, float, list[Customer]]:

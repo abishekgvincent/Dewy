@@ -1,12 +1,24 @@
+import logging
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 
-from app.routes import send
+from app import models  # noqa: F401
+from app.config import settings
+from app.database import Base, engine
+from app.routes import router
 
-app = FastAPI(title="Dewy Channel Service")
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
+)
 
-app.include_router(send.router, prefix="/send", tags=["send"])
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    Base.metadata.create_all(bind=engine)
+    yield
 
 
-@app.get("/health")
-def health_check() -> dict[str, str]:
-    return {"status": "ok"}
+app = FastAPI(title=settings.app_name, lifespan=lifespan)
+app.include_router(router)

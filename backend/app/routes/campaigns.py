@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from app.db.database import get_db, SessionLocal
 from app.models.campaign import Campaign
 from app.models.customer import Customer
+from app.models.order import Order
 from app.models.segment import Segment
 from app.models.communication import Communication
 from app.models.communication_event import CommunicationEvent
@@ -32,6 +33,73 @@ class CampaignCreatePayload(BaseModel):
     segment_name: str | None = None
     filters: dict | None = None
     description: str | None = None
+
+def generate_campaign_insight_background(campaign_id: int):
+    db: Session = SessionLocal()
+    try:
+        campaign = db.query(Campaign).filter(Campaign.id == campaign_id).first()
+        if not campaign or campaign.status != "Completed":
+            return
+
+        existing = db.query(AIInsight).filter(AIInsight.campaign_id == campaign_id).first()
+        if existing:
+            return
+
+        segment = db.query(Segment).filter(Segment.id == campaign.segment_id).first()
+        sent_count = db.query(Communication).filter(Communication.campaign_id == campaign_id).count()
+        delivered_count = db.query(Communication).filter(
+            Communication.campaign_id == campaign_id,
+            Communication.status.in_(["Delivered", "Opened", "Clicked", "Purchased"])
+        ).count()
+        opened_count = db.query(Communication).filter(
+            Communication.campaign_id == campaign_id,
+            Communication.status.in_(["Opened", "Clicked", "Purchased"])
+        ).count()
+        clicked_count = db.query(Communication).filter(
+            Communication.campaign_id == campaign_id,
+            Communication.status.in_(["Clicked", "Purchased"])
+        ).count()
+        purchased_count = db.query(Communication).filter(
+            Communication.campaign_id == campaign_id,
+            Communication.status == "Purchased"
+        ).count()
+
+        purchased_customer_ids = db.query(Communication.customer_id).filter(
+            Communication.campaign_id == campaign_id,
+            Communication.status == "Purchased"
+        ).all()
+        purchased_customer_ids = [c[0] for c in purchased_customer_ids]
+
+        revenue = 0.0
+        if purchased_customer_ids:
+            revenue_val = db.query(Order.order_amount).filter(
+                Order.customer_id.in_(purchased_customer_ids),
+                Order.order_date >= campaign.created_at
+            ).all()
+            revenue = sum(r[0] for r in revenue_val)
+
+        metrics = AICampaignMetrics(
+            sent_count=sent_count,
+            delivered_count=delivered_count,
+            opened_count=opened_count,
+            clicked_count=clicked_count,
+            purchased_count=purchased_count,
+            revenue=round(revenue, 2),
+            channel=campaign.channel,
+            segment_name=segment.name if segment else "Custom"
+        )
+        ai_res = generate_campaign_insights_ai(metrics)
+        insight = AIInsight(
+            campaign_id=campaign_id,
+            insight=ai_res.summary,
+            recommendation=f"{ai_res.recommendations}\n\n**Next Recommended Campaign**: {ai_res.next_best_campaign}"
+        )
+        db.add(insight)
+        db.commit()
+    except Exception as e:
+        logger.error(f"Failed to generate campaign insights in background: {e}")
+    finally:
+        db.close()
 
 def run_campaign_send(campaign_id: int):
     """
@@ -58,9 +126,9 @@ def run_campaign_send(campaign_id: int):
         
         channel_service_url = os.getenv("CHANNEL_SERVICE_URL", "http://localhost:8001").strip()
         
-        # 4. Create Communication records and call simulator
+        # 4. Create and bulk-insert Communication records in one single commit to avoid remote db roundtrips
+        comms = []
         for c in customers:
-            # Create a Queued communication
             comm = Communication(
                 campaign_id=campaign.id,
                 customer_id=c.id,
@@ -69,20 +137,25 @@ def run_campaign_send(campaign_id: int):
                 status="Queued"
             )
             db.add(comm)
-            db.commit() # Commit to get ID
-            
-            # Send to simulator
+            comms.append(comm)
+        db.commit()
+        
+        # 5. Dispatch to channel simulator
+        for comm in comms:
             payload = {
-                "campaign_id": campaign.id,
-                "customer_id": c.id,
-                "communication_id": comm.id,
-                "channel": campaign.channel,
+                "campaign_id": str(campaign.id),
+                "customer_id": str(comm.customer_id),
+                "communication_id": str(comm.id),
+                "recipient": c.email,
+                "channel": campaign.channel.lower(),
                 "message": campaign.message
             }
             
+            logger.info(f"Outgoing CRM payload: {payload}")
+            
             try:
-                # Post to Channel Simulator
-                response = requests.post(f"{channel_service_url}/send/", json=payload, timeout=5)
+                # Post to Channel Simulator (No trailing slash)
+                response = requests.post(f"{channel_service_url}/send", json=payload, timeout=5)
                 if response.status_code == 200:
                     comm.status = "Sent"
                     # Log SENT event
@@ -94,11 +167,13 @@ def run_campaign_send(campaign_id: int):
                     db.add(evt)
                 else:
                     comm.status = "Failed"
+                    error_msg = f"Channel service returned status {response.status_code}: {response.text}"
+                    logger.error(f"Validation/Simulator Error: {error_msg} for payload {payload}")
                     evt = CommunicationEvent(
                         communication_id=comm.id,
                         event_type="FAILED",
                         event_timestamp=datetime.utcnow(),
-                        metadata_json={"error": f"Channel service returned status {response.status_code}"}
+                        metadata_json={"error": error_msg}
                     )
                     db.add(evt)
             except Exception as e:
@@ -112,9 +187,10 @@ def run_campaign_send(campaign_id: int):
                 )
                 db.add(evt)
                 
-            db.commit()
+        # Final commit to persist simulator request statuses
+        db.commit()
             
-        # 5. Mark campaign completed
+        # 6. Mark campaign completed
         campaign.status = "Completed"
         db.commit()
         logger.info(f"Campaign {campaign_id} completed sending.")
@@ -167,7 +243,7 @@ def list_campaigns(db: Session = Depends(get_db)):
 
 
 @router.get("/{id}")
-def get_campaign_detail(id: int, db: Session = Depends(get_db)):
+def get_campaign_detail(id: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     campaign = db.query(Campaign).filter(Campaign.id == id).first()
     if not campaign:
         raise HTTPException(status_code=404, detail="Campaign not found")
@@ -237,29 +313,9 @@ def get_campaign_detail(id: int, db: Session = Depends(get_db)):
     # 3. AI Insights
     insight = db.query(AIInsight).filter(AIInsight.campaign_id == id).first()
     
-    # Generate insights on-the-fly if campaign is completed and has no insights
+    # Generate insights after the response so the analytics page never hangs on AI latency.
     if not insight and campaign.status == "Completed" and sent_count > 0:
-        try:
-            metrics = AICampaignMetrics(
-                sent_count=sent_count,
-                delivered_count=delivered_count,
-                opened_count=opened_count,
-                clicked_count=clicked_count,
-                purchased_count=purchased_count,
-                revenue=revenue,
-                channel=campaign.channel,
-                segment_name=segment.name if segment else "Custom"
-            )
-            ai_res = generate_campaign_insights_ai(metrics)
-            insight = AIInsight(
-                campaign_id=id,
-                insight=ai_res.summary,
-                recommendation=f"{ai_res.recommendations}\n\n**Next Recommended Campaign**: {ai_res.next_best_campaign}"
-            )
-            db.add(insight)
-            db.commit()
-        except Exception as e:
-            logger.error(f"Failed to generate dynamic campaign insights: {e}")
+        background_tasks.add_task(generate_campaign_insight_background, id)
             
     return {
         "id": campaign.id,
@@ -328,7 +384,7 @@ def send_campaign(payload: SendCampaignRequest, background_tasks: BackgroundTask
         raise HTTPException(status_code=404, detail="Campaign not found")
         
     if campaign.status == "Running":
-        raise HTTPException(status_code=400, detail="Campaign is already running")
+        return {"status": "already_running", "campaign_id": campaign.id}
         
     campaign.status = "Running"
     db.commit()
@@ -337,3 +393,67 @@ def send_campaign(payload: SendCampaignRequest, background_tasks: BackgroundTask
     background_tasks.add_task(run_campaign_send, campaign.id)
     
     return {"status": "started", "campaign_id": campaign.id}
+
+
+@router.get("/{id}/analytics")
+def get_campaign_analytics(id: int, db: Session = Depends(get_db)):
+    campaign = db.query(Campaign).filter(Campaign.id == id).first()
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+        
+    sent_count = db.query(Communication).filter(Communication.campaign_id == id).count()
+    delivered_count = db.query(Communication).filter(
+        Communication.campaign_id == id,
+        Communication.status.in_(["Delivered", "Opened", "Clicked", "Purchased"])
+    ).count()
+    opened_count = db.query(Communication).filter(
+        Communication.campaign_id == id,
+        Communication.status.in_(["Opened", "Clicked", "Purchased"])
+    ).count()
+    clicked_count = db.query(Communication).filter(
+        Communication.campaign_id == id,
+        Communication.status.in_(["Clicked", "Purchased"])
+    ).count()
+    purchased_count = db.query(Communication).filter(
+        Communication.campaign_id == id,
+        Communication.status == "Purchased"
+    ).count()
+    
+    # Calculate revenue
+    purchased_customer_ids = db.query(Communication.customer_id).filter(
+        Communication.campaign_id == id,
+        Communication.status == "Purchased"
+    ).all()
+    purchased_customer_ids = [c[0] for c in purchased_customer_ids]
+    
+    revenue = 0.0
+    if purchased_customer_ids:
+        revenue_val = db.query(Order.order_amount).filter(
+            Order.customer_id.in_(purchased_customer_ids),
+            Order.order_date >= campaign.created_at
+        ).all()
+        revenue = sum(r[0] for r in revenue_val)
+    revenue = round(revenue, 2)
+    
+    open_rate = opened_count / delivered_count if delivered_count > 0 else 0.0
+    click_rate = clicked_count / opened_count if opened_count > 0 else 0.0
+    conversion_rate = purchased_count / sent_count if sent_count > 0 else 0.0
+    
+    return {
+        "id": campaign.id,
+        "name": campaign.name,
+        "status": campaign.status,
+        "stats": {
+            "sent": sent_count,
+            "delivered": delivered_count,
+            "opened": opened_count,
+            "clicked": clicked_count,
+            "purchased": purchased_count,
+            "revenue": revenue
+        },
+        "rates": {
+            "open_rate": round(open_rate, 4),
+            "click_rate": round(click_rate, 4),
+            "conversion_rate": round(conversion_rate, 4)
+        }
+    }

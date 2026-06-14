@@ -7,6 +7,8 @@ from app.models.campaign import Campaign
 from app.models.communication import Communication
 from app.models.communication_event import CommunicationEvent
 from app.models.insight import AIInsight
+from app.models.callback_log import CallbackLog
+from app.models.dataset import Dataset
 
 __all__ = [
     "Customer",
@@ -18,4 +20,6 @@ __all__ = [
     "Communication",
     "CommunicationEvent",
     "AIInsight",
+    "CallbackLog",
+    "Dataset",
 ]
