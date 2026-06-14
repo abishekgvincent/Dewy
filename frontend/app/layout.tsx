@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Dewy | AI-Native Skincare CRM",
-  description: "AI-native CRM and Campaign Copilot for beauty brands.",
+  title: "Dewy | AI-Native Consumer CRM",
+  description: "AI-native CRM and Campaign Copilot for consumer brands.",
 };
 
 export default function RootLayout({
