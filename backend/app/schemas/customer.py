@@ -6,7 +6,7 @@ class CustomerBase(BaseModel):
     email: str
     phone: str | None = None
     city: str | None = None
-    skin_type: str | None = None  # Dry, Oily, Combination, Sensitive
+    category_preference: str | None = None  # Apparel, Electronics, Home, Beauty
     age_group: str | None = None  # 18-24, 25-34, 35-44, 45+
     persona: str | None = None    # VIP, Regular, Dormant, SunCare, AcneCare
 

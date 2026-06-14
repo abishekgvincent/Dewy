@@ -6,10 +6,11 @@ import { useQuery } from "@tanstack/react-query";
 import { getStats } from "@/lib/api";
 import { useTheme } from "@/components/providers";
 import { Button } from "@/components/ui/button";
-import { Sparkles, Megaphone, Droplet, Database, MessageSquare, Users, ShoppingBag, DollarSign, Percent, Zap, Sun, Moon } from "lucide-react";
+import { Sparkles, Megaphone, Droplet, Database, MessageSquare, Users, ShoppingBag, DollarSign, Percent, Zap, Sun, Moon, Home } from "lucide-react";
 
 const navItems = [
-  { name: "AI Copilot", href: "/", icon: MessageSquare },
+  { name: "Home", href: "/", icon: Home },
+  { name: "AI Copilot", href: "/ai-copilot", icon: MessageSquare },
   { name: "Campaigns", href: "/campaigns", icon: Megaphone },
   { name: "Datasets", href: "/datasets", icon: Database },
 ];

@@ -1,6 +1,14 @@
-# Dewy – AI-Native CRM for Beauty Brands
+# Dewy – AI-Native CRM for Consumer Brands
 
-Dewy is a production-quality, AI-native CRM platform built specifically for beauty, cosmetics, and skincare brands. Instead of manually writing database filters or SQL queries, marketers write business goals in natural language (e.g., *"Win back customers who haven't purchased in 90 days"* or *"Target sunscreen buyers who have never purchased a moisturizer"*).
+Dewy is an AI-native CRM platform that helps consumer brands intelligently identify, engage, and convert shoppers through personalized marketing campaigns. Instead of manually writing database filters or SQL queries, marketers write business goals in natural language (e.g., *"Win back customers who haven't purchased in 90 days"* or *"Target customers who purchased sunscreen but never purchased moisturizer"*).
+
+### 🎯 Scope & Design Philosophy
+Dewy is designed as a focused, high-fidelity CRM prototype centering around one opinionated, end-to-end campaign workflow:
+$$\text{Brief} \longrightarrow \text{Segment} \longrightarrow \text{Generate Copy} \longrightarrow \text{Simulate Send} \longrightarrow \text{Analyze Performance}$$
+
+To ensure reliability, the platform separates AI interpretation from database execution:
+- **AI Interpretation & Recommendation (Gemini)**: Google Gemini is used exclusively for cognitive tasks—parsing natural language goals, predicting the best marketing channels, recommending copy variants, and rendering post-campaign performance evaluations.
+- **Deterministic Metrics & Logic (SQLAlchemy)**: All audience logic, segment counts, campaign calculations, and funnel performance metrics are computed **deterministically** via local database engine execution using structured SQLAlchemy filters. This avoids AI hallucination in customer counts or financial metrics.
 
 Dewy processes these requests end-to-end:
 1. **AI Segmentation**: Uses Gemini NLP to parse the goal into structured database filters.
@@ -26,7 +34,7 @@ Dewy processes these requests end-to-end:
 ### Backend
 - **Framework**: FastAPI (Python 3.11+)
 - **ORM**: SQLAlchemy 2.x
-- **Database**: SQLite (Local Dev / Docker Volume) or PostgreSQL (Production-ready)
+- **Database**: SQLite (Local Dev) or PostgreSQL (Production-ready)
 - **AI Engine**: Google Gemini API via `google-generativeai` SDK (Gemini 1.5/2.5 models)
 - **Environment**: Python-dotenv, Pydantic v2 schemas
 - **Server**: Uvicorn
@@ -37,10 +45,10 @@ Dewy processes these requests end-to-end:
 - **Database**: SQLite (independent data persistence store)
 - **Task Dispatcher**: Asyncio background task loops simulating delay-based consumer funnels
 
-### Orchestration & Deployment
-- **Containerization**: Docker
-- **Orchestration**: Docker Compose
+### Deployment & Configuration
+- **Hosting Platforms**: Vercel (Frontend), Render (Backend & Channel Simulator)
 - **Configuration Templates**: Root, backend, and channel-service `.env.example` configurations
+
 
 ---
 

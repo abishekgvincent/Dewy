@@ -21,13 +21,13 @@ def build_customer_query(db: Session, filters: dict):
     """
     query = db.query(Customer)
     
-    # 1. skin_type
-    if "skin_type" in filters and filters["skin_type"]:
-        val = filters["skin_type"]
+    # 1. category_preference
+    if "category_preference" in filters and filters["category_preference"]:
+        val = filters["category_preference"]
         if isinstance(val, list):
-            query = query.filter(Customer.skin_type.in_(val))
+            query = query.filter(Customer.category_preference.in_(val))
         else:
-            query = query.filter(Customer.skin_type == val)
+            query = query.filter(Customer.category_preference == val)
             
     # 2. age_group
     if "age_group" in filters and filters["age_group"]:

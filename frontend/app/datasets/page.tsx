@@ -29,9 +29,9 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 
-const SKIN_TYPES = ["Dry", "Oily", "Combination", "Sensitive"];
+const CATEGORY_PREFERENCES = ["Apparel", "Electronics", "Home", "Beauty"];
 const AGE_GROUPS = ["18-24", "25-34", "35-44", "45+"];
-const PERSONAS = ["VIP", "Regular", "Dormant", "SunCare", "AcneCare"];
+const PERSONAS = ["VIP", "Regular", "Dormant", "TechEnthusiast", "FashionForward"];
 
 export default function DatasetsPage() {
   const [datasetName, setDatasetName] = useState("Uploaded Dataset");
@@ -42,7 +42,7 @@ export default function DatasetsPage() {
 
   // Customer Directory states
   const [custSearch, setCustSearch] = useState("");
-  const [custSkin, setCustSkin] = useState("");
+  const [custCategory, setCustCategory] = useState("");
   const [custAge, setCustAge] = useState("");
   const [custPersona, setCustPersona] = useState("");
 
@@ -53,10 +53,10 @@ export default function DatasetsPage() {
   });
 
   const { data: customers, isLoading: customersLoading } = useQuery({
-    queryKey: ["customers-directory", custSearch, custSkin, custAge, custPersona, selectedDatasetId],
+    queryKey: ["customers-directory", custSearch, custCategory, custAge, custPersona, selectedDatasetId],
     queryFn: () => getCustomers({
       search: custSearch || undefined,
-      skin_type: custSkin || undefined,
+      category_preference: custCategory || undefined,
       age_group: custAge || undefined,
       persona: custPersona || undefined,
     }),
@@ -117,7 +117,7 @@ export default function DatasetsPage() {
           Datasets Management
         </h1>
         <p className="text-sm text-zinc-500 dark:text-zinc-400">
-          Upload custom customer databases or load the Beauty Brand demo dataset to automatically discover intelligence mapping rules.
+          Upload custom customer databases or load the Consumer Brand demo dataset to automatically discover intelligence mapping rules.
         </p>
       </div>
 
@@ -207,7 +207,7 @@ export default function DatasetsPage() {
                 disabled={uploadMutation.isPending}
                 className="w-full flex items-center justify-center gap-1.5 border-zinc-200 text-zinc-800 dark:border-zinc-800 dark:text-zinc-300 font-bold"
               >
-                <Play className="h-4 w-4 fill-current" /> Load Seeded Beauty Dataset
+                <Play className="h-4 w-4 fill-current" /> Load Seeded Consumer Dataset
               </Button>
             </CardContent>
           </Card>
@@ -349,7 +349,7 @@ export default function DatasetsPage() {
                         <span className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">
                           {activeDataset.intelligence_summary?.refill_candidates_count || "154"} Refill Candidates
                         </span>
-                        <span className="text-xs text-zinc-400">Serum order scheduled 25-40 days ago</span>
+                        <span className="text-xs text-zinc-400">Accessory order scheduled 25-40 days ago</span>
                       </div>
                       <span className="rounded bg-green-50 px-1.5 py-0.5 text-xs font-bold text-green-700 dark:bg-green-950/25 dark:text-green-400">
                         Conf: {activeDataset.intelligence_summary?.confidence_scores?.refills * 100 || "91"}%
@@ -437,15 +437,15 @@ export default function DatasetsPage() {
                     
                     <div className="w-full sm:w-32 flex flex-col gap-1">
                       <span className="text-xs font-bold text-zinc-400 flex items-center gap-1 uppercase">
-                        Skin Type
+                        Category Pref
                       </span>
                       <select
-                        value={custSkin}
-                        onChange={(e) => setCustSkin(e.target.value)}
+                        value={custCategory}
+                        onChange={(e) => setCustCategory(e.target.value)}
                         className="h-9 rounded-lg border border-zinc-200 bg-white px-2 py-1 text-sm text-zinc-700 outline-none dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300"
                       >
                         <option value="">All</option>
-                        {SKIN_TYPES.map(st => (
+                        {CATEGORY_PREFERENCES.map(st => (
                           <option key={st} value={st}>{st}</option>
                         ))}
                       </select>
@@ -515,7 +515,7 @@ export default function DatasetsPage() {
                               </td>
                               <td className="py-2.5 text-zinc-500">{c.email}</td>
                               <td className="py-2.5 text-zinc-600 dark:text-zinc-400">
-                                <span className="font-semibold">{c.skin_type}</span> ({c.age_group})
+                                <span className="font-semibold">{c.category_preference}</span> ({c.age_group})
                               </td>
                               <td className="py-2.5">
                                 <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-bold ${

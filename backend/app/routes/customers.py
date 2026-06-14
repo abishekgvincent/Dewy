@@ -9,7 +9,7 @@ router = APIRouter()
 @router.get("/", response_model=list[CustomerRead])
 def list_customers(
     search: str | None = None,
-    skin_type: str | None = None,
+    category_preference: str | None = None,
     age_group: str | None = None,
     persona: str | None = None,
     db: Session = Depends(get_db)
@@ -23,8 +23,8 @@ def list_customers(
             (Customer.city.ilike(f"%{search}%"))
         )
         
-    if skin_type:
-        query = query.filter(Customer.skin_type == skin_type)
+    if category_preference:
+        query = query.filter(Customer.category_preference == category_preference)
         
     if age_group:
         query = query.filter(Customer.age_group == age_group)

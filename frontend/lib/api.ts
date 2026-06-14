@@ -24,7 +24,7 @@ export interface Customer {
   email: string;
   phone: string;
   city: string;
-  skin_type: string;
+  category_preference: string;
   age_group: string;
   persona: string;
   total_spend: number;
@@ -145,7 +145,7 @@ export const getStats = async (): Promise<Stats> => {
 // Customers API
 export const getCustomers = async (params?: {
   search?: string;
-  skin_type?: string;
+  category_preference?: string;
   age_group?: string;
   persona?: string;
 }): Promise<Customer[]> => {

@@ -36,24 +36,23 @@ except ImportError:
 random.seed(42)
 
 # Categories
-CATEGORIES = ["Cleanser", "Serum", "Moisturizer", "Sunscreen", "Night Cream", "Lip Care", "Face Mask", "Toner"]
+CATEGORIES = ["Apparel", "Electronics", "Home", "Beauty", "Sports", "Books"]
 
-# Skin Types and Age Groups
-SKIN_TYPES = ["Dry", "Oily", "Combination", "Sensitive"]
+# Category Preferences and Age Groups
+CATEGORY_PREFERENCES = ["Apparel", "Electronics", "Home", "Beauty"]
 AGE_GROUPS = ["18-24", "25-34", "35-44", "45+"]
-PERSONAS = ["VIP", "Regular", "Dormant", "SunCare", "AcneCare"]
+PERSONAS = ["VIP", "Regular", "Dormant", "TechEnthusiast", "FashionForward"]
 
 # Product details
 PRODUCT_NAME_TEMPLATES = {
-    "Cleanser": ["Hydrating Foaming Cleanser", "Glow-Boosting Cleanser", "Centella Calming Cleanser", "Salicylic Acid Purifying Gel", "Gentle Milky Wash", "Oil-to-Milk Cleansing Balm", "Soothing Tea Tree Foam"],
-    "Serum": ["Super C Brightening Serum", "Hyaluronic Acid Plumping Drops", "Retinol Renewal Complex", "Niacinamide Pore-Minimizing Serum", "Snail Mucin Barrier Serum", "Bakuchiol Wrinkle Blur", "Copper Peptide Elixir"],
-    "Moisturizer": ["Ceramide Rich Moisture Balm", "Water-Gel Hydrator", "Centella Soothing Cream", "Ultra-Hydrating Face Cream", "Matte Balancing Lotion", "Barrier Repair Cream", "Rosehip Daily Moisturizer"],
-    "Sunscreen": ["Broad Spectrum SPF 50 Dry-Touch", "Daily Dew SPF 30 Mineral Sunscreen", "Hydrating UV Shield Gel", "Sun Glow Drops SPF 40", "Zinc Barrier Protection", "Airy Matte Sun Fluid"],
-    "Night Cream": ["Overnight Recovery Cream", "Melatonin Sleeping Mask", "Pro-Collagen Restorative Cream", "Youth Boost Peptide Cream", "Soothing Cica Sleep Balm"],
-    "Lip Care": ["Butter Lip Mask", "Peptide Lip Treatment", "Hydrating Lip Balm Coconut", "Shea Butter Lip Butter", "Honey Glaze Lip Gloss"],
-    "Face Mask": ["Dead Sea Clay Detox Mask", "Hydrating Sheet Mask Pack", "Pumpkin Enzyme Exfoliating Peel", "Matcha Antioxidant Clay Mask", "Overnight Hydration Jelly Mask"],
-    "Toner": ["AHA/BHA Exfoliating Toner", "Milky Rice Bran Toner", "Rose Water Hydrating Mist", "Witch Hazel Pore Toner", "Heartleaf Calming Liquid"]
+    "Apparel": ["Organic Cotton T-Shirt", "Slim Fit Denim Jeans", "Classic Crewneck Sweatshirt", "Waterproof Windbreaker Jacket", "Merino Wool Socks", "Casual Canvas Sneakers", "Athletic Fleece Joggers"],
+    "Electronics": ["Wireless Bluetooth Earbuds", "Noise-Canceling Headphones", "Mechanical Gaming Keyboard", "Portable Power Bank 20k", "Ultra-Wide Computer Monitor", "Smart Fitness Watch", "Dual-Band Wi-Fi Router"],
+    "Home": ["Ergonomic Mesh Office Chair", "Scented Soy Wax Candle", "Ceramic Coffee Mug Set", "Memory Foam Sleeping Pillow", "Stainless Steel Water Bottle", "Adjustable Desk Lamp", "Non-Stick Frying Pan"],
+    "Beauty": ["Hydrating Facial Cleanser", "Vitamin C Face Serum", "Broad Spectrum Sunscreen SPF 50", "Shea Butter Lip Balm", "Moisturizing Hand Cream", "Volumizing Hair Shampoo"],
+    "Sports": ["Non-Slip Yoga Mat", "Adjustable Dumbbell Set", "High-Performance Running Shoes", "Resistance Bands Pack", "Durable Hiking Backpack"],
+    "Books": ["Sci-Fi Bestselling Novel", "Productivity & Habits Guide", "Classic Literature Collection", "Cookbook for Beginners", "Mystery & Thriller Fiction"]
 }
+
 
 def seed_database() -> None:
     print("Re-creating all tables...")
@@ -89,12 +88,12 @@ def seed_database() -> None:
         print(f"Successfully seeded {len(products)} products.")
         
         # Categorize products for persona orders
-        sunscreens = [p for p in products if p.category == "Sunscreen"]
-        moisturizers = [p for p in products if p.category == "Moisturizer"]
-        cleansers = [p for p in products if p.category == "Cleanser"]
-        serums = [p for p in products if p.category == "Serum"]
-        toners = [p for p in products if p.category == "Toner"]
-        other_products = [p for p in products if p.category not in ["Sunscreen", "Moisturizer"]]
+        electronics = [p for p in products if p.category == "Electronics"]
+        apparel = [p for p in products if p.category == "Apparel"]
+        home = [p for p in products if p.category == "Home"]
+        beauty = [p for p in products if p.category == "Beauty"]
+        sports = [p for p in products if p.category == "Sports"]
+        other_products = [p for p in products if p.category not in ["Electronics", "Apparel"]]
 
         print("Seeding Customers & Orders...")
         customers = []
@@ -105,28 +104,28 @@ def seed_database() -> None:
         
         customer_count = 1000
         # Personalities allocations
-        # VIP: 150, Regular: 450, Dormant: 150, SunCare: 120, AcneCare: 130
+        # VIP: 150, Regular: 450, Dormant: 150, TechEnthusiast: 120, FashionForward: 130
         for i in range(customer_count):
             if i < 150:
                 persona = "VIP"
-                skin_type = random.choice(SKIN_TYPES)
+                category_preference = random.choice(CATEGORY_PREFERENCES)
                 age_group = random.choice(AGE_GROUPS)
             elif i < 600:
                 persona = "Regular"
-                skin_type = random.choice(SKIN_TYPES)
+                category_preference = random.choice(CATEGORY_PREFERENCES)
                 age_group = random.choice(AGE_GROUPS)
             elif i < 750:
                 persona = "Dormant"
-                skin_type = random.choice(SKIN_TYPES)
+                category_preference = random.choice(CATEGORY_PREFERENCES)
                 age_group = random.choice(AGE_GROUPS)
             elif i < 870:
-                persona = "SunCare"
-                skin_type = random.choice(["Combination", "Sensitive", "Dry"])
-                age_group = random.choice(["25-34", "35-44"])
-            else:
-                persona = "AcneCare"
-                skin_type = "Oily" if random.random() < 0.7 else "Combination"
+                persona = "TechEnthusiast"
+                category_preference = "Electronics"
                 age_group = random.choice(["18-24", "25-34"])
+            else:
+                persona = "FashionForward"
+                category_preference = "Apparel"
+                age_group = random.choice(["25-34", "35-44"])
                 
             signup_date = now - timedelta(days=random.randint(120, 365))
             
@@ -136,7 +135,7 @@ def seed_database() -> None:
                 email=f"{fake.email().split('@')[0]}_{i+1}@example.com", # make sure unique
                 phone=fake.phone_number(),
                 city=fake.city(),
-                skin_type=skin_type,
+                category_preference=category_preference,
                 age_group=age_group,
                 total_spend=0.0,  # will update after orders are calculated
                 persona=persona,
@@ -172,14 +171,14 @@ def seed_database() -> None:
                 # All orders are older than 90 days
                 for _ in range(num_orders):
                     order_dates.append(now - timedelta(days=random.randint(91, 240)))
-            elif c.persona == "SunCare":
+            elif c.persona == "TechEnthusiast":
                 num_orders = random.randint(3, 8)
-                # Buy sunscreens, never moisturizers
+                # Buy electronics, never apparel
                 for _ in range(num_orders):
                     order_dates.append(now - timedelta(days=random.randint(5, 180)))
-            elif c.persona == "AcneCare":
+            elif c.persona == "FashionForward":
                 num_orders = random.randint(3, 8)
-                # Focused on cleansers and serums
+                # Focused on apparel and accessories
                 for _ in range(num_orders):
                     order_dates.append(now - timedelta(days=random.randint(5, 180)))
             else:
@@ -194,18 +193,18 @@ def seed_database() -> None:
             for o_date in order_dates:
                 # Select products based on persona rules
                 o_products = []
-                if c.persona == "SunCare":
-                    # Must purchase at least one sunscreen, and can purchase other things except moisturizer
-                    o_products.append(random.choice(sunscreens))
+                if c.persona == "TechEnthusiast":
+                    # Must purchase at least one electronics item, and can purchase other things except apparel
+                    o_products.append(random.choice(electronics))
                     if random.random() < 0.5:
                         o_products.append(random.choice(other_products))
-                elif c.persona == "AcneCare":
-                    # Primarily cleansers and serums (salicylic acid etc.)
-                    o_products.append(random.choice(cleansers))
+                elif c.persona == "FashionForward":
+                    # Primarily apparel and accessories
+                    o_products.append(random.choice(apparel))
                     if random.random() < 0.6:
-                        o_products.append(random.choice(serums))
+                        o_products.append(random.choice(home))
                     if random.random() < 0.3:
-                        o_products.append(random.choice(toners))
+                        o_products.append(random.choice(beauty))
                 elif c.persona == "VIP":
                     # Buy anything, often multiple items
                     num_items = random.randint(2, 4)
@@ -217,6 +216,7 @@ def seed_database() -> None:
                 
                 order_amount = 0.0
                 order_items_temp = []
+
                 
                 for p in o_products:
                     qty = random.choice([1, 2]) if c.persona == "VIP" else 1

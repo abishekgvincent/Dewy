@@ -19,9 +19,9 @@ async def upload_dataset(
     db: Session = Depends(get_db)
 ):
     try:
-        # Option 1: Load Preloaded Beauty Brand Dataset
+        # Option 1: Load Preloaded Consumer Brand Dataset
         if preloaded:
-            logger.info("Loading preloaded beauty brand dataset...")
+            logger.info("Loading preloaded consumer brand dataset...")
             
             # Clear campaigns, communications, events, callback logs, segments, insights, and datasets
             # BUT preserve already seeded customers, products, orders, order_items in Neon
@@ -66,11 +66,11 @@ async def upload_dataset(
             create_intelligence_segments(db, intel)
             
             dataset = Dataset(
-                name="Beauty Brand (Preloaded)",
+                name="Consumer Brand (Preloaded)",
                 status="processed",
                 row_counts=row_counts,
                 schema_info={
-                    "customers": {"columns": ["id", "name", "email", "phone", "city", "skin_type", "age_group", "total_spend", "persona", "signup_date"]},
+                    "customers": {"columns": ["id", "name", "email", "phone", "city", "category_preference", "age_group", "total_spend", "persona", "signup_date"]},
                     "products": {"columns": ["id", "name", "category", "price", "refill_cycle_days"]},
                     "orders": {"columns": ["id", "customer_id", "order_amount", "order_date"]},
                     "mappings": {
@@ -83,7 +83,7 @@ async def upload_dataset(
             db.add(dataset)
             db.commit()
             db.refresh(dataset)
-            return {"message": "Preloaded beauty dataset loaded", "dataset": dataset}
+            return {"message": "Preloaded consumer dataset loaded", "dataset": dataset}
             
         # Option 2: Upload CSV files
         customers_content = None

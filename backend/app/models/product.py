@@ -6,7 +6,7 @@ class Product(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
-    category = Column(String, nullable=False)  # Cleanser, Serum, Moisturizer, Sunscreen, Night Cream, Lip Care, Face Mask, Toner
+    category = Column(String, nullable=False)  # Apparel, Electronics, Home, Beauty, Sports, Books
     price = Column(Float, nullable=False)
     refill_cycle_days = Column(Integer, nullable=True)
     created_at = Column(DateTime, server_default=func.now(), nullable=False)

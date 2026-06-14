@@ -110,7 +110,7 @@ def ingest_dataset_csvs(
             p = Product(
                 id=i,
                 name=f"Demo Product {i}",
-                category="Serum" if i % 2 == 0 else "Moisturizer",
+                category="Electronics" if i % 2 == 0 else "Apparel",
                 price=20.0 + i * 5,
                 refill_cycle_days=30,
                 created_at=datetime.utcnow() - timedelta(days=60)
@@ -403,12 +403,12 @@ def run_customer_intelligence_layer(db: Session, row_counts: dict) -> dict:
     if city_counts:
         top_city = max(city_counts, key=lambda x: x[1])[0] or "Chennai"
         
-    # Product Affinity (mock standard beauty affinities or query)
-    # Frequently purchased together: Serum -> Moisturizer
+    # Product Affinity (mock standard affinities or query)
+    # Frequently purchased together: Electronics -> Apparel
     affinity = [
-        {"from": "Vitamin C Serum", "to": "Moisturizer", "confidence": 0.88, "support": 0.12},
-        {"from": "Cleanser", "to": "Toner", "confidence": 0.76, "support": 0.18},
-        {"from": "Sunscreen", "to": "Lip Care", "confidence": 0.64, "support": 0.09}
+        {"from": "Wireless Bluetooth Earbuds", "to": "Slim Fit Denim Jeans", "confidence": 0.88, "support": 0.12},
+        {"from": "Organic Cotton T-Shirt", "to": "Ergonomic Mesh Office Chair", "confidence": 0.76, "support": 0.18},
+        {"from": "Smart Fitness Watch", "to": "High-Performance Running Shoes", "confidence": 0.64, "support": 0.09}
     ]
     
     # Opportunities calculations
@@ -440,10 +440,10 @@ def run_customer_intelligence_layer(db: Session, row_counts: dict) -> dict:
         },
         {
             "id": 2,
-            "title": "Serum Refill Campaign",
+            "title": "Repeat Accessory Campaign",
             "potential_revenue": int(refill_candidates * 1200 * 0.31 * 0.10),
             "confidence": 91,
-            "reason": f"{refill_candidates} customers purchased serum 25–40 days ago.\nAverage refill cycle is 30 days.\nExpected repurchase probability is 31%.\nConfidence: 91%",
+            "reason": f"{refill_candidates} customers purchased tech accessories 25–40 days ago.\nAverage repurchase cycle is 30 days.\nExpected repurchase probability is 31%.\nConfidence: 91%",
             "audience_size": refill_candidates,
             "average_order_value": 1200,
             "revenue_explanation": {
@@ -454,20 +454,20 @@ def run_customer_intelligence_layer(db: Session, row_counts: dict) -> dict:
                 "projected_revenue": int(refill_candidates * 1200 * 0.31 * 0.10),
             },
             "reasoning_steps": [
-                "Reviewed product refill-cycle data",
-                "Matched recent serum orders to replenishment windows",
-                "Calculated the number of refill-eligible customers",
-                "Estimated projected order value from refill pricing",
+                "Reviewed product repeat-cycle data",
+                "Matched recent accessory orders to replenishment windows",
+                "Calculated the number of repeat-eligible customers",
+                "Estimated projected order value from product pricing",
                 "Ranked the opportunity by near-term purchase intent",
             ],
             "filters": {"refill_soon": True}
         },
         {
             "id": 3,
-            "title": "Cross-Sell Moisturizer",
+            "title": "Cross-Sell Denim Jeans",
             "potential_revenue": int(total_customers * 0.12 * 950 * 0.22 * 0.10),
             "confidence": 87,
-            "reason": f"{int(total_customers * 0.12)} customers recently purchased sunscreen without moisturizer.\nPurchase affinity for this combination is 88%.\nExpected cross-sell probability is 22%.\nConfidence: 87%",
+            "reason": f"{int(total_customers * 0.12)} customers recently purchased electronics without apparel.\nPurchase affinity for this combination is 88%.\nExpected cross-sell probability is 22%.\nConfidence: 87%",
             "audience_size": int(total_customers * 0.12),
             "average_order_value": 950,
             "revenue_explanation": {
@@ -479,12 +479,12 @@ def run_customer_intelligence_layer(db: Session, row_counts: dict) -> dict:
             },
             "reasoning_steps": [
                 "Analyzed product affinity rules",
-                "Found sunscreen customers missing moisturizer purchases",
+                "Found electronics customers missing apparel purchases",
                 "Estimated the cross-sellable audience size",
-                "Applied average moisturizer basket value",
+                "Applied average apparel basket value",
                 "Ranked the opportunity by bundle revenue potential",
             ],
-            "filters": {"bought": "Sunscreen", "not_bought": "Moisturizer"}
+            "filters": {"bought": "Electronics", "not_bought": "Apparel"}
         }
     ]
     

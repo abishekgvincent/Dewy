@@ -152,41 +152,41 @@ def generate_campaign_messages_ai(segment_name: str, channel: str) -> dict:
         }
     elif channel.lower() == "sms":
         return {
-            "variant_a": f"Dewy: We miss you! Take 15% off your skincare essentials with code GLOW15. Shop now: dewy.com/shop",
-            "variant_b": f"Skincare running low? Refill today & get a free mini cleanser. Use code REFILLFREE at dewy.com",
-            "variant_c": f"Dewy: Pamper your skin today! Free shipping + 10% off your entire order with code SHIPSOPREM. dewy.com/shop"
+            "variant_a": f"Dewy: We miss you! Take 15% off your favorites with code WELCOME15. Shop now: dewy.com/shop",
+            "variant_b": f"Style running low? Restock today & get a free accessory. Use code RESTOCKFREE at dewy.com",
+            "variant_c": f"Dewy: Pamper yourself today! Free shipping + 10% off your entire order with code SHIPSOPREM. dewy.com/shop"
         }
     elif channel.lower() == "email":
         return {
             "variant_a": (
-                "Subject: We miss you! Here is 15% off your skincare favorites... 🌟\n\n"
+                "Subject: We miss you! Here is 15% off your favorites... 🌟\n\n"
                 "Hi there,\n\n"
-                "We noticed you haven't stopped by Dewy in a while, and your skin is missing its favorite routines! "
+                "We noticed you haven't stopped by Dewy in a while, and we miss seeing you! "
                 "To welcome you back, we'd love to offer you 15% off your next order. "
-                "Use code GLOW15 at checkout to claim your offer.\n\n"
-                "Stay Glowing,\nThe Dewy Team"
+                "Use code WELCOME15 at checkout to claim your offer.\n\n"
+                "Stay Stylin',\nThe Dewy Team"
             ),
             "variant_b": (
-                "Subject: Time to refill? Enjoy a free mini cleanser on us! 🧴\n\n"
-                "Hello Skincare Lover,\n\n"
-                "Are your favorite cleansers, serums, or sunscreens running low? "
-                "Refill your skincare shelf today and get a complimentary travel-size Centella Cleanser. "
-                "Just apply code REFILLFREE at checkout.\n\n"
+                "Subject: Time to restock? Enjoy a free accessory on us! 🎒\n\n"
+                "Hello Shopper,\n\n"
+                "Are your favorite clothing items, gear, or accessories running low? "
+                "Restock your closet or home today and get a complimentary travel-size accessory. "
+                "Just apply code RESTOCKFREE at checkout.\n\n"
                 "Best,\nThe Dewy Team"
             ),
             "variant_c": (
-                "Subject: Your skin deserves a treat (Free Shipping + 10% Off) ✨\n\n"
+                "Subject: Your style deserves a treat (Free Shipping + 10% Off) ✨\n\n"
                 "Hi there,\n\n"
-                "Refresh your beauty routine with Dewy. We've compiled our top hydration favorites just for you. "
+                "Refresh your style and space with Dewy. We've compiled our top seasonal favorites just for you. "
                 "Get 10% off plus free shipping on your entire purchase using code SHIPSOPREM.\n\n"
                 "Warmly,\nThe Dewy Team"
             )
         }
     else: # RCS or other
         return {
-            "variant_a": f"🌟 We miss your glow! Recharge your skincare routine with 15% off your favorites at Dewy. Use code GLOW15.",
-            "variant_b": f"🧴 Shelf running dry? Refill your hydration serum and get a free mini wash! Code: REFILLFREE.",
-            "variant_c": f"✨ Dewy skincare is calling. Get 10% off and free shipping on us today. Code: SHIPSOPREM."
+            "variant_a": f"🌟 We miss you! Recharge your style with 15% off your favorites at Dewy. Use code WELCOME15.",
+            "variant_b": f"🎒 Closet running low? Restock your style and get a free accessory! Code: RESTOCKFREE.",
+            "variant_c": f"✨ Dewy styles are calling. Get 10% off and free shipping on us today. Code: SHIPSOPREM."
         }
 
 
@@ -326,7 +326,7 @@ def recommend_segments_ai(prompt: str) -> list[dict]:
     if "refill" in lower_prompt or "replenish" in lower_prompt:
         return [
             {
-                "name": "Serum Refill Candidates",
+                "name": "Repeat Accessory Candidates",
                 "confidence": 95,
                 "reason": "39.2% of customers are due for replenishment.\nAverage spend is ₹1,239.\nHistorical repeat purchase rate is 28%.",
                 "filters": {"refill_soon": True}
@@ -353,13 +353,13 @@ def recommend_segments_ai(prompt: str) -> list[dict]:
                 "filters": {"inactive_days": 90}
             }
         ]
-    elif "sunscreen" in lower_prompt or "moisturizer" in lower_prompt:
+    elif "electronics" in lower_prompt or "apparel" in lower_prompt:
         return [
             {
-                "name": "Sunscreen Buyers without Moisturizer",
+                "name": "Electronics Buyers without Apparel",
                 "confidence": 91,
-                "reason": "Cross-sell opportunity based on skincare routine gaps (sun protection needs moisture lock).",
-                "filters": {"bought": "Sunscreen", "not_bought": "Moisturizer"}
+                "reason": "Cross-sell opportunity based on category purchase affinity gaps (electronics need matching apparel).",
+                "filters": {"bought": "Electronics", "not_bought": "Apparel"}
             }
         ]
     elif "repeat" in lower_prompt or "frequent" in lower_prompt:

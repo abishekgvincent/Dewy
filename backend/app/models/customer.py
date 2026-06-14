@@ -9,7 +9,7 @@ class Customer(Base):
     email = Column(String, unique=True, index=True, nullable=False)
     phone = Column(String, nullable=True)
     city = Column(String, nullable=True)
-    skin_type = Column(String, nullable=True)  # Dry, Oily, Combination, Sensitive
+    category_preference = Column(String, nullable=True)  # Apparel, Electronics, Home, Beauty
     age_group = Column(String, nullable=True)  # 18-24, 25-34, 35-44, 45+
     total_spend = Column(Float, default=0.0, nullable=False)
     persona = Column(String, nullable=True)     # VIP, Regular, Dormant, SunCare, AcneCare
