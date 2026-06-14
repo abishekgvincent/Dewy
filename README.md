@@ -99,28 +99,41 @@ Dewy processes these requests end-to-end:
 
 ---
 
-## 🚀 Getting Started
+### Deploying to Vercel & Render
 
-### Method A: Docker Compose (Recommended)
+For production, the frontend is deployed to **Vercel** and the backend services are deployed to **Render**.
 
-1. **Clone the repository and set environment variables**:
-   ```bash
-   cp .env.example .env
-   ```
-2. **Add your Google Gemini API Key** in `.env`:
-   ```ini
-   GEMINI_API_KEY=your_gemini_api_key_here
-   ```
-3. **Launch the stack**:
-   ```bash
-   docker-compose up --build -d
-   ```
-4. Access the apps:
-   - **Frontend Dashboard**: [http://localhost:3000](http://localhost:3000)
-   - **Backend API Docs**: [http://localhost:8000/docs](http://localhost:8000/docs)
-   - **Channel Simulator Docs**: [http://localhost:8001/docs](http://localhost:8001/docs)
+#### 1. Backend Service (FastAPI) on Render
+1. Create a new **Web Service** on Render and connect your repository.
+2. Configure the service:
+   - **Root Directory**: `backend`
+   - **Build Command**: `pip install -r requirements.txt`
+   - **Start Command**: `python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+3. Add the following **Environment Variables**:
+   - `GEMINI_API_KEY`: *(Required)* Your Google Gemini API key.
+   - `DATABASE_URL`: *(Optional)* Connection URI to a PostgreSQL database (e.g. Render PostgreSQL or Neon DB). If omitted, the service will fall back to SQLite.
+   - `CHANNEL_SERVICE_URL`: The URL of your deployed Channel Simulator service.
+
+#### 2. Channel Simulator Service (FastAPI) on Render
+1. Create a new **Web Service** on Render and connect your repository.
+2. Configure the service:
+   - **Root Directory**: `channel-service`
+   - **Build Command**: `pip install -r requirements.txt`
+   - **Start Command**: `python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+3. Add the following **Environment Variables**:
+   - `DATABASE_URL`: *(Optional)* Connection URI to a PostgreSQL database.
+   - `CRM_CALLBACK_URL`: `https://<your-backend-render-url>/api/receipts`
+
+#### 3. Frontend App (Next.js) on Vercel
+1. Import your repository into Vercel.
+2. Configure the project:
+   - **Root Directory**: `frontend`
+   - **Framework Preset**: `Next.js`
+3. Add the following **Environment Variable**:
+   - `NEXT_PUBLIC_API_URL`: The URL of your deployed Backend service (e.g. `https://your-backend.onrender.com`).
 
 ---
+
 
 ### Method B: Manual Local Setup
 
