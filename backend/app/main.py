@@ -31,6 +31,6 @@ app.include_router(receipt.router, prefix="/receipt", tags=["receipt"])
 app.include_router(receipt.router, prefix="/api/receipts", tags=["receipt"])
 app.include_router(stats.router, prefix="/stats", tags=["stats"])
 
-@app.get("/health")
-def health_check() -> dict[str, str]:
+@app.api_route("/health", methods=["GET", "HEAD"])
+async def health_check():
     return {"status": "ok"}
